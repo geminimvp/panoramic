@@ -12,6 +12,7 @@ Gem::Specification.new do |s|
   s.license     = 'MIT'
 
   s.add_runtime_dependency 'rails', '>= 4.2.0'
+  s.add_dependency 'request_store'
   s.add_development_dependency 'rails-controller-testing'
   s.add_development_dependency 'capybara', '~> 2.5', '>= 2.5.0'
   s.add_development_dependency 'factory_bot'

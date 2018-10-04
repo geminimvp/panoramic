@@ -5,7 +5,9 @@ module Panoramic
 
     # this method is mandatory to implement a Resolver
     def find_templates(name, prefix, partial, details, key=nil, locals=[])
-      return [] if @@resolver_options[:only] && !@@resolver_options[:only].include?(prefix)
+      resolver_options = ::RequestStore.store[:resolver_options]
+      only_list = resolver_options && resolver_options[:only]
+      return [] if only_list && !only_list.include?(prefix)
 
       path = build_path(name, prefix)
       conditions = {
@@ -25,7 +27,7 @@ module Panoramic
     # Instantiate Resolver by passing a model (decoupled from ORMs)
     def self.using(model, options={})
       @@model = model
-      @@resolver_options = options
+      ::RequestStore.store[:resolver_options] = options
       self.instance
     end
 

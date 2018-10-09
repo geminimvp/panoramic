@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 describe Panoramic::Resolver do
-  let(:resolver) { Panoramic::Resolver.using(DatabaseTemplate) }
+  let(:resolver) { Panoramic::Resolver.new(DatabaseTemplate) }
 
   context ".find_templates" do
     it "should lookup templates for given params" do
@@ -17,7 +17,7 @@ describe Panoramic::Resolver do
     end
 
     it "should lookup templates for given params and prefixes" do
-      resolver = Panoramic::Resolver.using(DatabaseTemplate, :only => 'foo')
+      resolver = Panoramic::Resolver.new(DatabaseTemplate, :only => 'foo')
       details = { :formats => [:html], :locale => [:en], :handlers => [:erb] }
 
       template = FactoryBot.create(:database_template, :path => 'bar/example')
@@ -28,7 +28,7 @@ describe Panoramic::Resolver do
     end
 
     it "should lookup multiple templates" do
-      resolver = Panoramic::Resolver.using(DatabaseTemplate, :only => 'foo')
+      resolver = Panoramic::Resolver.new(DatabaseTemplate, :only => 'foo')
       details = { :formats => [:html,:text], :locale => [:en], :handlers => [:erb] }
       details[:formats].each do |format|
         FactoryBot.create(:database_template, :path => 'foo/example', :format => format.to_s)
@@ -38,10 +38,46 @@ describe Panoramic::Resolver do
       expect(templates.map(&:formats).flatten.uniq).to eq([:html, :text])
     end
   end
+
+  context 'dynamic lookup' do
+    # This is a simple request-specific resolver. It accepts a :paths detail
+    # with a list of acceptale paths to render. The database templates are
+    # scoped to these paths.
+    let(:resolver) { Panoramic::Resolver.new(->(details) { DatabaseTemplate.where(path: details[:paths]) }) }
+    let(:details) { { :formats => [:html], :locale => [:en], :handlers => [:erb] } }
+
+    before do
+      FactoryBot.create(:database_template, :path => 'foo/example')
+    end
+
+    it 'looks up templates' do
+      expect(
+        resolver.find_templates('example', 'foo', false,
+                                details.merge(paths: ['foo/example'])).first
+      ).to_not be_nil
+    end
+
+    it 'scopes as requested' do
+      expect(
+        resolver.find_templates('example', 'foo', false,
+                                details.merge(paths: ['bar/example'])).first
+      ).to be_nil
+    end
+
+    it 'handles nil' do
+      resolver = Panoramic::Resolver.new(->(details) { nil })
+      expect(resolver.find_templates('example', 'bar', false, details).first).to be_nil
+    end
+
+    it 'catches :skip_panoramic' do
+      resolver = Panoramic::Resolver.new(->(details) { throw(:skip_panoramic) })
+      expect(resolver.find_templates('example', 'bar', false, details).first).to be_nil
+    end
+  end
 end
 
 describe_private Panoramic::Resolver, '(private methods)' do
-  let(:resolver) { Panoramic::Resolver.using(DatabaseTemplate) }
+  let(:resolver) { Panoramic::Resolver.new(DatabaseTemplate) }
 
   context "#build_path" do
     it "returns prefix/name if prefix is passed" do

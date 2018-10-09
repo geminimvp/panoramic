@@ -9,7 +9,8 @@ module Panoramic
           validates :locale,  :inclusion => I18n.available_locales.map(&:to_s), :allow_blank => true
           validates :handler, :inclusion => ActionView::Template::Handlers.extensions.map(&:to_s)
 
-          after_save { Panoramic::Resolver.instance.clear_cache }
+          # NOTE See ClassMethods.resolver for details on cache coherence.
+          after_save { self.class.resolver.clear_cache }
 
           extend ClassMethods
         end
@@ -20,8 +21,12 @@ module Panoramic
           self.where(conditions)
         end
 
+        # NOTE Use this to create new Panoramic::Resolvers. If you instantiate
+        # them yourself, the after_save hook will not be able to invalidate the
+        # cache when templates change, so you will be taking responsibility to
+        # manage their cache coherency.
         def resolver(options={})
-          Panoramic::Resolver.using self, options
+          @resolver ||= Panoramic::Resolver.new(self, options)
         end
       end
     end

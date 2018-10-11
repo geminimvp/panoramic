@@ -1,26 +1,11 @@
 module Panoramic
   class Resolver < ActionView::Resolver
-    # model - Either an ActiveRecord::Relation defining the scope of templates
-    #         to be searched, or a callable object accepting a hash of details and
-    #         returning a Relation. The callable can return nil or throw the
-    #         symbol :skip_panoramic to bypass Panoramic and defer to the next
-    #         resolver.
-    #
-    # options - An optional hash of:
-    #   :only - If provided, only operate on the given prefix.
-    #
-    def initialize(model, options={})
-      super()
-      @model = model
-      @resolver_options = options
-    end
+    require "singleton"
+    include Singleton
 
     # this method is mandatory to implement a Resolver
     def find_templates(name, prefix, partial, details, key=nil, locals=[])
-      return [] if @resolver_options[:only] && !@resolver_options[:only].include?(prefix)
-
-      request_model = resolve_model(details)
-      return [] if request_model.nil?
+      return [] if @@resolver_options[:only] && !@@resolver_options[:only].include?(prefix)
 
       path = build_path(name, prefix)
       conditions = {
@@ -31,29 +16,20 @@ module Panoramic
         :partial => partial || false
       }.merge(details[:additional_criteria].presence || {})
 
-      request_model.find_model_templates(conditions).map do |record|
+      @@model.find_model_templates(conditions).map do |record|
         Rails.logger.debug "Rendering template from database: #{path} (#{record.format})"
         initialize_template(record)
       end
     end
 
+    # Instantiate Resolver by passing a model (decoupled from ORMs)
+    def self.using(model, options={})
+      @@model = model
+      @@resolver_options = options
+      self.instance
+    end
+
     private
-
-    def request_specific_options?
-      @model.respond_to?(:call)
-    end
-
-    def resolve_model(details)
-      if request_specific_options?
-        # If the block throws :skip_panoramic, we immediately quit and fall
-        # through to the next resolver.
-        catch(:skip_panoramic) do
-          @model.call(details)
-        end
-      else
-        @model
-      end
-    end
 
     # Initialize an ActionView::Template object based on the record found.
     def initialize_template(record)

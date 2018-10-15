@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name        = "panoramic"
-  s.version     ='1.0.0.gemini'
+  s.version     ='2.0.0.gemini'
   s.platform    = Gem::Platform::RUBY
   s.authors     = ["Andrea Pavoni"]
   s.email       = ["andrea.pavoni@gmail.com"]

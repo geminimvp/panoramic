@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    panoramic (0.0.7)
+    panoramic (1.0.0.gemini)
       rails (>= 4.2.0)
 
 GEM
@@ -67,7 +67,7 @@ GEM
     loofah (2.2.1)
       crass (~> 1.0.2)
       nokogiri (>= 1.5.9)
-    mail (2.7.0)
+    mail (2.7.1)
       mini_mime (>= 0.1.1)
     method_source (0.9.0)
     mime-types (3.1)

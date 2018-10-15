@@ -48,7 +48,12 @@ module Panoramic
 
     # Build path with eventual prefix
     def build_path(name, prefix)
-      prefix.present? ? "#{prefix}/#{name}" : name
+      prefix.present? ? "#{remap_path(prefix)}/#{name}" : name
+    end
+
+    # Perform path substitutions for engine theme implementor QoL
+    def remap_path(prefix)
+      prefix.sub(/^spree/,'store')
     end
 
     # Normalize array by converting all symbols to strings.
